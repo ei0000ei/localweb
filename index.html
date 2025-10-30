@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大学网站导航</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 30px;
+            margin-top: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .university-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            list-style: none;
+        }
+        .university-card {
+            border-radius: 10px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #e0e0e0;
+            background: white;
+            text-align: center;
+        }
+        .university-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        .university-link {
+            display: block;
+            padding: 25px 20px;
+            text-decoration: none;
+            color: #333;
+            transition: background 0.3s ease;
+        }
+        .university-link:hover {
+            background: #f8f9fa;
+        }
+        .university-name {
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+        .error {
+            text-align: center;
+            padding: 20px;
+            color: #e74c3c;
+            background: #ffeaea;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9em;
+        }
+        @media (max-width: 768px) {
+            .university-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+        }
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+            .university-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>大学网站导航</h1>
+    <p class="subtitle">点击大学名称访问官方网站</p>
+    
+    <div class="container">
+        <div class="loading" id="loadingMessage">正在加载大学数据...</div>
+        <div class="university-grid" id="universityList" style="display: none;">
+            <!-- 内容将通过JavaScript生成 -->
+        </div>
+        <div id="errorMessage" class="error" style="display: none;"></div>
+    </div>
+    
+    <div class="footer">
+        <p>大学网站导航系统 &copy; 2023</p>
+    </div>
+
+    <script>
+        // 从CSV文件加载大学数据
+        async function loadUniversityData() {
+            const loadingElement = document.getElementById('loadingMessage');
+            const listElement = document.getElementById('universityList');
+            const errorElement = document.getElementById('errorMessage');
+            
+            try {
+                // 使用相对路径请求uniweb.csv文件
+                const response = await fetch('uniweb.csv');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP错误! 状态: ${response.status}`);
+                }
+                
+                const csvText = await response.text();
+                const universities = parseCSV(csvText);
+                
+                // 隐藏加载信息，显示列表
+                loadingElement.style.display = 'none';
+                displayUniversities(universities, listElement);
+                
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                loadingElement.style.display = 'none';
+                errorElement.style.display = 'block';
+                errorElement.innerHTML = `
+                    <h3>加载数据失败</h3>
+                    <p>错误信息: ${error.message}</p>
+                    <p>请确保uniweb.csv文件存在且格式正确</p>
+                `;
+            }
+        }
+
+        // 解析CSV数据
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            const universities = [];
+            
+            for (const line of lines) {
+                // 使用更简单的解析方法，处理冒号分隔的数据
+                const parts = line.split('：');
+                if (parts.length >= 2) {
+                    const name = parts[0].trim();
+                    const url = parts.slice(1).join('：').trim();
+                    if (name && url) {
+                        // 确保URL以http或https开头
+                        let fullUrl = url;
+                        if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
+                            // 如果URL不完整，尝试补全
+                            if (fullUrl.includes('https')) {
+                                fullUrl = 'https://' + fullUrl.split('https')[1];
+                            } else if (fullUrl.includes('http')) {
+                                fullUrl = 'http://' + fullUrl.split('http')[1];
+                            }
+                        }
+                        
+                        universities.push({ 
+                            name, 
+                            url: fullUrl
+                        });
+                    }
+                }
+            }
+            
+            return universities;
+        }
+
+        // 显示大学列表
+        function displayUniversities(universities, listElement) {
+            if (universities.length === 0) {
+                listElement.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">没有找到大学数据</div>';
+                listElement.style.display = 'block';
+                return;
+            }
+            
+            listElement.innerHTML = universities.map(university => 
+                `<div class="university-card">
+                    <a class="university-link" href="${university.url}" target="_blank">
+                        <span class="university-name">${university.name}</span>
+                    </a>
+                </div>`
+            ).join('');
+            
+            listElement.style.display = 'grid';
+        }
+
+        // 页面加载完成后开始加载数据
+        document.addEventListener('DOMContentLoaded', loadUniversityData);
+    </script>
+</body>
+</html>

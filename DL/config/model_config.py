@@ -2,7 +2,8 @@
 class ModelConfig:
     # BERT配置
     BERT_CONFIG = {
-        'model_name': 'bert-base-chinese',
+        # 'model_name': 'bert-base-chinese', # huggingface预训练模型名称，需下载
+        'model_name': '/root/YP/DL_uniform/DL/bert-base-chinese-local', # 本地预训练模型路径
         'max_length': 256,
         'hidden_dropout_prob': 0.3,
         'attention_probs_dropout_prob': 0.3
